@@ -1,0 +1,10 @@
+const menu=document.querySelector('.menu-toggle'),nav=document.querySelector('#navigation');
+menu?.addEventListener('click',()=>{const open=menu.getAttribute('aria-expanded')!=='true';menu.setAttribute('aria-expanded',String(open));nav.classList.toggle('open',open);});
+nav?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{menu.setAttribute('aria-expanded','false');nav.classList.remove('open');}));
+document.querySelector('#year').textContent=new Date().getFullYear();
+const form=document.querySelector('#contact-form'),status=document.querySelector('#form-status'),button=form?.querySelector('button[type=submit]');
+let requestId=crypto.randomUUID(),lastPayload='';
+form?.addEventListener('submit',async event=>{event.preventDefault();if(!form.reportValidity())return;const fields=Object.fromEntries(new FormData(form));fields.consent=form.elements.consent.checked;const fingerprint=JSON.stringify(fields);if(fingerprint!==lastPayload){requestId=crypto.randomUUID();lastPayload=fingerprint;}fields.requestId=requestId;button.disabled=true;button.querySelector('.submit-label').textContent='Sending…';status.className='';status.textContent='Sending your message…';
+try{const response=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields),signal:AbortSignal.timeout(20000)});let result;try{result=await response.json();}catch{throw new Error('We couldn’t send your message. Please email james@jcicada.com.');}if(!response.ok||!result.ok)throw new Error(result.error||'We couldn’t send your message. Please try again or email James.');status.className='success';status.textContent='Thank you! Your message has been accepted for delivery to James. We’ll reply to the email you provided.';form.reset();requestId=crypto.randomUUID();lastPayload='';}
+catch(error){status.className='error';status.textContent=error.name==='TimeoutError'?'The request timed out. Please try again or email james@jcicada.com.':error.message;}
+finally{button.disabled=false;button.querySelector('.submit-label').textContent='Send your message';}});
